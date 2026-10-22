@@ -1,6 +1,6 @@
 # ⚡ AI-Powered Article Summarizer (Groq LLM)
 
-An ultra-fast, command-line AI application that generates structured, high-quality summaries of long articles, essays, and text documents using the **Groq API** and state-of-the-art open-source LLMs (Meta Llama 3.3 70B & Llama 3.1 8B).
+An ultra-fast, command-line AI application that generates structured, high-quality summaries of long articles, essays, and text documents using the **Groq API** and state-of-the-art open-source LLMs (`openai/gpt-oss-120b` & `openai/gpt-oss-20b`).
 
 ---
 
@@ -93,7 +93,7 @@ Main Menu:
   [2] Summarize text via Direct Input (paste text)
   [3] Test with Sample Article (sample_article.txt)
   [4] Change Summary Style  (Current: bullet-points)
-  [5] Change LLM Model      (Current: llama-3.3-70b-versatile)
+  [5] Change LLM Model      (Current: openai/gpt-oss-120b)
   [6] Exit
 ```
 
@@ -116,9 +116,9 @@ python summarizer.py --text "Artificial intelligence inference has advanced rapi
 python summarizer.py --file sample_article.txt --style executive --output my_summary.txt
 ```
 
-#### 4. Specify a different model (e.g., ultra-fast 8B model):
+#### 4. Specify a different model (e.g., ultra-fast 20B model):
 ```bash
-python summarizer.py --file sample_article.txt --model llama-3.1-8b-instant
+python summarizer.py --file sample_article.txt --model openai/gpt-oss-20b
 ```
 
 ---
@@ -130,7 +130,7 @@ python summarizer.py --file sample_article.txt --model llama-3.1-8b-instant
 | `--file` | `-f` | Path to text file to summarize | None |
 | `--text` | `-t` | Direct text string to summarize | None |
 | `--style` | `-s` | `bullet-points`, `concise`, `detailed`, `executive` | `bullet-points` |
-| `--model` | `-m` | Groq model (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) | `llama-3.3-70b-versatile` |
+| `--model` | `-m` | Groq model (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`) | `openai/gpt-oss-120b` |
 | `--output` | `-o` | Output file path to save summary | Terminal only |
 | `--api-key` | `-k` | Pass API key directly | Loads from `.env` / env var |
 

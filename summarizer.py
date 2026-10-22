@@ -11,7 +11,7 @@ import sys
 import argparse
 import getpass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 # Load environment variables from .env file if available
 try:
@@ -22,7 +22,14 @@ except ImportError:
 
 # Groq client import
 try:
-    from groq import Groq, AuthenticationError, RateLimitError, APIConnectionError, APIStatusError
+    from groq import (
+        Groq,
+        AuthenticationError,
+        RateLimitError,
+        APIConnectionError,
+        APIStatusError,
+        NotFoundError
+    )
 except ImportError:
     print("\n[ERROR] The 'groq' Python package is not installed.")
     print("Please install it with: pip install groq python-dotenv\n")
@@ -42,8 +49,9 @@ class Colors:
     RESET = '\033[0m'
 
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
-BACKUP_MODEL = "llama-3.1-8b-instant"
+# Latest active production models on Groq
+DEFAULT_MODEL = "openai/gpt-oss-120b"
+BACKUP_MODEL = "openai/gpt-oss-20b"
 
 SUMMARY_STYLES = {
     "concise": "A concise, coherent 2-3 paragraph summary capturing the core ideas without unnecessary fluff.",
@@ -61,6 +69,27 @@ def print_banner():
     print("║             Powered by Groq Cloud & LLMs                  ║")
     print("╚═══════════════════════════════════════════════════════════╝")
     print(f"{Colors.RESET}")
+
+
+def get_available_models(client: Groq) -> List[str]:
+    """
+    Dynamically fetches available text generation models from the Groq API.
+    Filters out speech-to-text, safety classifiers, and audio models.
+    """
+    fallback_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "allam-2-7b"]
+    try:
+        models = client.models.list().data
+        excluded = ['whisper', 'prompt-guard', 'orpheus', 'safeguard']
+        active_models = [m.id for m in models if getattr(m, 'active', True) and not any(x in m.id for x in excluded)]
+        if active_models:
+            # Sort prioritized models first
+            priority = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+            ordered = [p for p in priority if p in active_models]
+            ordered += [m for m in active_models if m not in ordered]
+            return ordered
+    except Exception:
+        pass
+    return fallback_models
 
 
 def get_api_key(cli_key: Optional[str] = None, interactive: bool = True) -> str:
@@ -117,7 +146,7 @@ def get_api_key(cli_key: Optional[str] = None, interactive: bool = True) -> str:
 def read_article_from_file(file_path: str) -> str:
     """
     Reads and validates article text from a local file.
-    Includes basic error handling for existence, permissions, and encoding.
+    Includes error handling for existence, permissions, and encoding.
     """
     path = Path(file_path).expanduser().resolve()
 
@@ -207,6 +236,11 @@ def summarize_article(
         )
     except AuthenticationError:
         raise RuntimeError("Invalid Groq API Key. Please verify your key at https://console.groq.com/keys")
+    except NotFoundError:
+        raise RuntimeError(
+            f"The model '{model}' is deprecated or not available on your Groq account.\n"
+            f"Recommended active models: '{DEFAULT_MODEL}' (Flagship 120B) or '{BACKUP_MODEL}' (Fast 20B)."
+        )
     except RateLimitError:
         raise RuntimeError("Groq API rate limit reached. Please wait a moment before trying again.")
     except APIConnectionError:
@@ -280,7 +314,7 @@ def interactive_menu(client: Groq, current_model: str, current_style: str):
             break
 
         if choice == "1":
-            file_path = input(f"Enter file path: ").strip()
+            file_path = input("Enter file path: ").strip()
             if not file_path:
                 print(f"{Colors.YELLOW}No path entered.{Colors.RESET}")
                 continue
@@ -344,20 +378,26 @@ def interactive_menu(client: Groq, current_model: str, current_style: str):
                 print(f"{Colors.RED}Please enter a valid number.{Colors.RESET}")
 
         elif choice == "5":
-            print("\nAvailable Groq Models:")
-            models = [
-                ("llama-3.3-70b-versatile", "Meta Llama 3.3 70B (High accuracy & reasoning, Recommended)"),
-                ("llama-3.1-8b-instant", "Meta Llama 3.1 8B (Ultra fast, lightweight)"),
-                ("mixtral-8x7b-32768", "Mistral Mixtral 8x7B (Large context window)"),
-                ("gemma2-9b-it", "Google Gemma 2 9B (Efficient & balanced)")
-            ]
-            for idx, (m_id, desc) in enumerate(models, start=1):
-                print(f"  [{idx}] {m_id} - {desc}")
-            model_choice = input(f"Select model (1-{len(models)}): ").strip()
+            print("\nFetching active text models from Groq...")
+            available_models = get_available_models(client)
+
+            model_descriptions = {
+                "openai/gpt-oss-120b": "Flagship 120B reasoning model (High accuracy & depth - Recommended)",
+                "openai/gpt-oss-20b": "Fast 20B model (High throughput & low latency)",
+                "qwen/qwen3.8-27b": "Alibaba Qwen 3.8 27B (High accuracy multimodal / reasoning)",
+                "allam-2-7b": "SDAIA Allam 2 7B (Lightweight model)"
+            }
+
+            print(f"\n{Colors.BOLD}Active Models on your Groq account:{Colors.RESET}")
+            for idx, m_id in enumerate(available_models, start=1):
+                desc = model_descriptions.get(m_id, "Active Groq model")
+                print(f"  [{idx}] {m_id} - {Colors.DIM}{desc}{Colors.RESET}")
+
+            model_choice = input(f"\nSelect model (1-{len(available_models)}): ").strip()
             try:
                 idx = int(model_choice) - 1
-                if 0 <= idx < len(models):
-                    model = models[idx][0]
+                if 0 <= idx < len(available_models):
+                    model = available_models[idx]
                     print(f"{Colors.GREEN}[Updated]{Colors.RESET} Model set to: {model}")
                 else:
                     print(f"{Colors.RED}Invalid selection.{Colors.RESET}")
@@ -380,7 +420,8 @@ def parse_arguments():
                "  python summarizer.py                              # Interactive mode\n"
                "  python summarizer.py --file article.txt          # Summarize from file\n"
                "  python summarizer.py --text 'Long article...'     # Summarize direct text\n"
-               "  python summarizer.py --file article.txt --style detailed --output summary.txt\n",
+               "  python summarizer.py --file article.txt --style detailed --output summary.txt\n"
+               "  python summarizer.py --file article.txt --model openai/gpt-oss-120b\n",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
