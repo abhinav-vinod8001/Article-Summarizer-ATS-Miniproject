@@ -1,180 +1,87 @@
-# ⚡ AI-Powered Article Summarizer (Groq LLM)
+# AI-Powered Article Summarizer (Groq API)
 
-An ultra-fast, command-line AI application that generates structured, high-quality summaries of long articles, essays, and text documents using the **Groq API** and state-of-the-art open-source LLMs (`openai/gpt-oss-120b` & `openai/gpt-oss-20b`).
-
----
-
-## 📌 Features
-
-- **High-Speed Inference**: Powered by Groq's LPU™ (Language Processing Unit) architecture for near-instant responses.
-- **Dual Input Modes**:
-  - **File Mode**: Summarize `.txt`, `.md`, or raw article files directly from disk.
-  - **Direct Input Mode**: Paste or type multi-line articles straight into the terminal.
-- **Interactive CLI & Command-Line Arguments**:
-  - Run interactively with a guided menu.
-  - Or automate via CLI flags (`--file`, `--text`, `--style`, `--output`).
-- **Customizable Summary Formats**:
-  - `bullet-points` (default): Crisp, structured key takeaways.
-  - `concise`: A coherent 2-3 paragraph synthesis.
-  - `detailed`: Section-by-section analytical breakdown.
-  - `executive`: TL;DR briefing with key findings and actionable insights.
-- **Robust Error Handling**:
-  - Handles missing/empty files, encoding quirks, invalid API keys, rate limits, and network errors gracefully.
-- **Security & Best Practices**:
-  - Zero hardcoded keys. Supports `.env`, environment variables, CLI parameters, and secure interactive masked prompts.
-  - Automatic `.gitignore` prevents accidental secret leaks to GitHub.
+A clean, minimalist command-line Python application that summarizes articles using the Groq API (`openai/gpt-oss-120b`).
 
 ---
 
-## 🔐 API Key Handling: Best Practice
+## Requirements & Features
 
-> **Why you should NOT hardcode API keys in source code:**
-> 1. **Public Repository Exposure**: If your code is pushed to GitHub, automated bots scrape repositories for API keys within seconds, leading to key revocation, quota exhaustion, or unexpected billing.
-> 2. **Security & Portability**: Hardcoding credentials ties the code to one person's account. Using environment variables lets anyone clone and use their own key safely.
-
-### How this project handles API keys securely:
-The application checks for credentials in the following order:
-1. **Command-line flag**: `--api-key <YOUR_KEY>`
-2. **Environment variable or `.env` file**: `GROQ_API_KEY`
-3. **Interactive fallback**: Prompts you securely (with masked password input via `getpass`), and asks if you'd like to save it to your local `.env` (which is git-ignored).
+- Summarize article text from a local file or direct terminal input.
+- Clear, well-structured summaries printed to the command line.
+- Basic error handling for file reading, empty inputs, network errors, and API key authentication.
+- Zero hardcoded API keys: supports `.env` and environment variables.
 
 ---
 
-## 🚀 Quickstart Guide
+## Setup & Installation
 
-### 1. Prerequisites
-- Python 3.8 or higher installed on your system.
-- A free Groq API key: [Get one from Groq Console](https://console.groq.com/keys).
-
-### 2. Installation
-
-Clone this repository and navigate to the project directory:
-```bash
-git clone https://github.com/YOUR_USERNAME/ai-article-summarizer.git
-cd ai-article-summarizer
-```
-
-Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure API Key (Optional but Recommended)
-Copy the example `.env` file and insert your API key:
-```bash
-cp .env.example .env
-```
-Edit `.env` and set:
-```ini
-GROQ_API_KEY=gsk_your_actual_groq_api_key_here
-```
-
-*(If you skip this step, the script will simply ask for your key when you first run it).*
-
----
-
-## 💻 Usage
-
-### Mode A: Interactive Menu (Recommended for Beginners)
-Simply run the script with no arguments:
-```bash
-python summarizer.py
-```
-
-You will see an interactive menu:
-```text
-╔═══════════════════════════════════════════════════════════╗
-║            AI-POWERED ARTICLE SUMMARIZER                  ║
-║             Powered by Groq Cloud & LLMs                  ║
-╚═══════════════════════════════════════════════════════════╝
-
-Main Menu:
-  [1] Summarize text from a File
-  [2] Summarize text via Direct Input (paste text)
-  [3] Test with Sample Article (sample_article.txt)
-  [4] Change Summary Style  (Current: bullet-points)
-  [5] Change LLM Model      (Current: openai/gpt-oss-120b)
-  [6] Exit
-```
-
----
-
-### Mode B: Direct Command-Line Arguments (Fast & Scriptable)
-
-#### 1. Summarize a local file:
-```bash
-python summarizer.py --file sample_article.txt
-```
-
-#### 2. Summarize direct text:
-```bash
-python summarizer.py --text "Artificial intelligence inference has advanced rapidly..."
-```
-
-#### 3. Choose a summary style and save output:
-```bash
-python summarizer.py --file sample_article.txt --style executive --output my_summary.txt
-```
-
-#### 4. Specify a different model (e.g., ultra-fast 20B model):
-```bash
-python summarizer.py --file sample_article.txt --model openai/gpt-oss-20b
-```
-
----
-
-## 🛠️ CLI Options Reference
-
-| Flag | Short | Description | Default |
-|---|---|---|---|
-| `--file` | `-f` | Path to text file to summarize | None |
-| `--text` | `-t` | Direct text string to summarize | None |
-| `--style` | `-s` | `bullet-points`, `concise`, `detailed`, `executive` | `bullet-points` |
-| `--model` | `-m` | Groq model (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`) | `openai/gpt-oss-120b` |
-| `--output` | `-o` | Output file path to save summary | Terminal only |
-| `--api-key` | `-k` | Pass API key directly | Loads from `.env` / env var |
-
----
-
-## 📂 Project Structure
-
-```text
-├── summarizer.py         # Main CLI application script
-├── requirements.txt      # Python package dependencies (groq, python-dotenv)
-├── sample_article.txt    # Ready-to-test sample article on AI & Inference
-├── .env.example          # Environment variable template
-├── .gitignore            # Ignores .env, virtual environments, and caches
-└── README.md             # Project documentation and guide
-```
-
----
-
-## 📤 Sharing to GitHub
-
-To push this project to your GitHub account:
-
-1. **Initialize git repository (if not already done)**:
+1. **Clone the repository:**
    ```bash
-   git init
-   git add .
-   git commit -m "Initial commit: AI-Powered Article Summarizer using Groq"
+   git clone https://github.com/abhinav-vinod8001/ai-article-summarizer.git
+   cd ai-article-summarizer
    ```
 
-2. **Create a new repository on GitHub**:
-   - Go to [GitHub New Repository](https://github.com/new).
-   - Name it `ai-article-summarizer` (or your preferred name).
-   - Leave "Initialize with README" **unchecked**.
-
-3. **Link and push**:
+2. **Install dependencies:**
    ```bash
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/ai-article-summarizer.git
-   git push -u origin main
+   pip install -r requirements.txt
    ```
 
-4. Share your repository link!
+3. **Configure API key:**
+   Get a free API key from [Groq Console](https://console.groq.com/keys) and set it in a `.env` file:
+   ```bash
+   cp .env.example .env
+   # Add your key to .env: GROQ_API_KEY=your_key_here
+   ```
+   *(Or just run the script; it will prompt you if no key is found).*
 
 ---
 
-## 📄 License
-This project is open-source and available under the [MIT License](LICENSE).
+## Usage
+
+### Interactive Mode
+Run the script without arguments:
+```bash
+python3 summarizer.py
+```
+
+Output:
+```text
+Article Summarizer
+------------------
+1. Summarize text from file
+2. Enter text directly
+3. Exit
+
+Select an option (1-3):
+```
+
+### Command-Line Arguments
+```bash
+# Summarize from file
+python3 summarizer.py -f sample_article.txt
+
+# Summarize and save output to a file
+python3 summarizer.py -f sample_article.txt -o summary.txt
+
+# Summarize directly from a text string
+python3 summarizer.py -t "Your article text goes here..."
+```
+
+---
+
+## File Structure
+
+```text
+├── summarizer.py       # Main CLI application
+├── requirements.txt    # Dependencies (groq, python-dotenv)
+├── sample_article.txt  # Sample article for testing
+├── .env.example        # Environment variable template
+├── .gitignore          # Excludes .env, cache, and summary outputs
+├── LICENSE             # MIT License
+└── README.md           # Documentation
+```
+
+---
+
+## License
+MIT License
