@@ -2,8 +2,8 @@
 """
 Article Summarizer
 ==================
-A simple command-line application to summarize articles from files
-or user input using the Groq API.
+A clean, efficient command-line application to summarize articles from files
+or user input using the Groq API with high compression efficiency.
 """
 
 import os
@@ -11,7 +11,7 @@ import sys
 import argparse
 import getpass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 # Load environment variables from .env file if available
 try:
@@ -85,7 +85,7 @@ def get_api_key(cli_key: Optional[str] = None, interactive: bool = True) -> str:
 
 
 def read_file(file_path: str) -> str:
-    """Reads article text from a file with basic error handling."""
+    """Reads article text from a file with error handling."""
     path = Path(file_path).expanduser().resolve()
 
     if not path.exists():
@@ -132,51 +132,127 @@ def read_user_input() -> str:
     return text
 
 
+def build_prompt(text: str) -> Tuple[str, str]:
+    """
+    Builds a high-compression system prompt enforcing strict formatting
+    and at least 45% to 60% length reduction.
+    """
+    words = len(text.split())
+    target_max = max(35, int(words * 0.50))
+
+    if words < 120:
+        system_prompt = (
+            "You are an expert executive editor specializing in dense, high-impact summarization.\n"
+            f"STRICT REQUIREMENT: The original text is {words} words. Your summary MUST be concise and "
+            f"under {target_max} words (at least 45% reduction).\n\n"
+            "FORMAT:\n"
+            "Core Thesis:\n"
+            "[1 concise sentence capturing the main point]\n\n"
+            "Key Takeaways:\n"
+            "• [First key insight]\n"
+            "• [Second key insight]\n\n"
+            "RULES:\n"
+            "- Eliminate all filler words, repeated background, and conversational commentary.\n"
+            "- Do not add greeting or meta-talk like 'Here is your summary'.\n"
+            "- Synthesize concepts tightly."
+        )
+    else:
+        system_prompt = (
+            "You are an expert executive editor specializing in dense, high-impact summarization.\n"
+            f"STRICT REQUIREMENT: The original text is {words} words. Your summary MUST achieve "
+            f"at least a 45% to 60% reduction in length (target under {target_max} words).\n\n"
+            "FORMAT:\n"
+            "Executive Overview:\n"
+            "[1 clear sentence stating the core thesis and significance]\n\n"
+            "Key Findings:\n"
+            "• [Concise, high-impact point detailing key evidence or mechanism]\n"
+            "• [Concise, high-impact point detailing key evidence or mechanism]\n"
+            "• [Concise, high-impact point detailing key evidence or mechanism]\n\n"
+            "The Bottom Line:\n"
+            "[1-2 sentences capturing the ultimate conclusion and future impact]\n\n"
+            "RULES:\n"
+            "- Strip out all redundant examples, side notes, and conversational filler.\n"
+            "- Do not generate markdown tables, nested sub-bullets, or meta-comments.\n"
+            "- Prioritize information density over exhaustive rewriting."
+        )
+
+    user_prompt = f"Article to summarize:\n\n{text}"
+    return system_prompt, user_prompt
+
+
 def summarize(client: Groq, text: str, model: str = MODEL_NAME) -> str:
-    """Sends the article to the Groq API and returns a concise, structured summary."""
-    system_prompt = (
-        "You are an article summarization assistant. "
-        "Summarize the provided article clearly and objectively. "
-        "Capture the main points and key takeaways in a concise, well-structured format."
-    )
+    """
+    Sends the article to Groq and returns a properly formatted,
+    highly reduced executive summary.
+    """
+    system_prompt, user_prompt = build_prompt(text)
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Please summarize this article:\n\n{text}"}
+        {"role": "user", "content": user_prompt}
     ]
 
     try:
         response = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=0.3,
-            max_tokens=1200
+            temperature=0.2,
+            max_tokens=1500
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if not content:
+            # Fallback in case of unexpected empty response
+            reasoning = getattr(response.choices[0].message, 'reasoning', '')
+            if reasoning:
+                content = reasoning
+        return content.strip() if content else "Summary generation completed with empty content."
     except NotFoundError:
-        # If the primary model is unavailable, try the fallback
         if model != FALLBACK_MODEL:
             return summarize(client, text, model=FALLBACK_MODEL)
         raise RuntimeError("Selected model is not available on Groq.")
     except AuthenticationError:
-        raise RuntimeError("Invalid Groq API key.")
+        raise RuntimeError("Invalid Groq API key. Check your key in .env")
     except RateLimitError:
-        raise RuntimeError("Groq API rate limit exceeded. Please wait a moment and try again.")
+        raise RuntimeError("Groq API rate limit reached. Please wait a moment and try again.")
     except APIConnectionError:
-        raise RuntimeError("Connection error. Please check your internet connection.")
+        raise RuntimeError("Connection failed. Please check your internet connectivity.")
     except APIStatusError as e:
         raise RuntimeError(f"Groq API error ({e.status_code}): {e.message}")
     except Exception as e:
         raise RuntimeError(f"Error during summarization: {str(e)}")
 
 
-def save_to_file(summary: str, output_path: str):
-    """Saves the summary text to a file."""
+def display_summary(summary: str, original_words: int):
+    """Prints the structured summary and clear word reduction statistics."""
+    summary_words = len(summary.split())
+    reduction = max(0.0, round((1.0 - (summary_words / max(original_words, 1))) * 100, 1))
+
+    print("\n" + "=" * 62)
+    print("                      ARTICLE SUMMARY")
+    print("=" * 62)
+    print(summary)
+    print("-" * 62)
+    print(f"Original: {original_words} words | Summary: {summary_words} words | Reduction: {reduction}%")
+    print("=" * 62 + "\n")
+
+
+def save_to_file(summary: str, original_words: int, output_path: str):
+    """Saves the summary text and reduction stats to a file."""
     try:
         path = Path(output_path).expanduser().resolve()
         path.parent.mkdir(parents=True, exist_ok=True)
+        summary_words = len(summary.split())
+        reduction = max(0.0, round((1.0 - (summary_words / max(original_words, 1))) * 100, 1))
+
+        output_content = (
+            f"ARTICLE SUMMARY\n"
+            f"{'=' * 62}\n"
+            f"{summary}\n"
+            f"{'-' * 62}\n"
+            f"Original: {original_words} words | Summary: {summary_words} words | Reduction: {reduction}%\n"
+        )
         with open(path, "w", encoding="utf-8") as f:
-            f.write(summary + "\n")
+            f.write(output_content)
         print(f"Summary saved to: {output_path}")
     except Exception as e:
         print(f"Failed to save file: {e}")
@@ -204,34 +280,30 @@ def interactive_menu(client: Groq):
                 continue
             try:
                 text = read_file(file_path)
-                print("\nGenerating summary...")
+                orig_words = len(text.split())
+                print(f"Processing '{file_path}' ({orig_words} words)...")
                 summary = summarize(client, text)
-                print("\nSummary:")
-                print("----------------------------------------")
-                print(summary)
-                print("----------------------------------------")
+                display_summary(summary, orig_words)
 
-                save_opt = input("\nSave summary to a file? (y/n): ").strip().lower()
+                save_opt = input("Save summary to a file? (y/n): ").strip().lower()
                 if save_opt in ('y', 'yes'):
                     out_path = input("Enter output filename (default: summary.txt): ").strip() or "summary.txt"
-                    save_to_file(summary, out_path)
+                    save_to_file(summary, orig_words, out_path)
             except Exception as e:
                 print(f"Error: {e}")
 
         elif choice == "2":
             try:
                 text = read_user_input()
-                print("\nGenerating summary...")
+                orig_words = len(text.split())
+                print(f"Processing input text ({orig_words} words)...")
                 summary = summarize(client, text)
-                print("\nSummary:")
-                print("----------------------------------------")
-                print(summary)
-                print("----------------------------------------")
+                display_summary(summary, orig_words)
 
-                save_opt = input("\nSave summary to a file? (y/n): ").strip().lower()
+                save_opt = input("Save summary to a file? (y/n): ").strip().lower()
                 if save_opt in ('y', 'yes'):
                     out_path = input("Enter output filename (default: summary.txt): ").strip() or "summary.txt"
-                    save_to_file(summary, out_path)
+                    save_to_file(summary, orig_words, out_path)
             except Exception as e:
                 print(f"Error: {e}")
 
@@ -246,7 +318,7 @@ def interactive_menu(client: Groq):
 def parse_arguments():
     """Configures command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Summarize articles from a file or text input using Groq API."
+        description="Summarize articles from a file or direct text input using Groq API."
     )
 
     input_group = parser.add_mutually_exclusive_group()
@@ -287,14 +359,13 @@ def main():
     if args.file:
         try:
             text = read_file(args.file)
-            print("Generating summary...")
+            orig_words = len(text.split())
+            print(f"Processing '{args.file}' ({orig_words} words)...")
             summary = summarize(client, text)
-            print("\nSummary:")
-            print("----------------------------------------")
-            print(summary)
-            print("----------------------------------------")
+            display_summary(summary, orig_words)
+
             if args.output:
-                save_to_file(summary, args.output)
+                save_to_file(summary, orig_words, args.output)
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
@@ -304,14 +375,13 @@ def main():
             text = args.text.strip()
             if not text:
                 raise ValueError("Text string cannot be empty.")
-            print("Generating summary...")
+            orig_words = len(text.split())
+            print(f"Processing text ({orig_words} words)...")
             summary = summarize(client, text)
-            print("\nSummary:")
-            print("----------------------------------------")
-            print(summary)
-            print("----------------------------------------")
+            display_summary(summary, orig_words)
+
             if args.output:
-                save_to_file(summary, args.output)
+                save_to_file(summary, orig_words, args.output)
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
