@@ -17,8 +17,8 @@ A clean, minimalist command-line Python application that summarizes articles usi
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/abhinav-vinod8001/ai-article-summarizer.git
-   cd ai-article-summarizer
+   git clone https://github.com/abhinav-vinod8001/Article-Summarizer-ATS-Miniproject.git
+   cd Article-Summarizer-ATS-Miniproject
    ```
 
 2. **Install dependencies:**
