@@ -40,6 +40,39 @@ MODEL_NAME = "openai/gpt-oss-120b"
 FALLBACK_MODEL = "openai/gpt-oss-20b"
 
 
+def save_key_to_env(key: str):
+    """Saves or updates GROQ_API_KEY in the local .env file."""
+    env_path = Path(".env")
+    lines = []
+    key_found = False
+
+    if env_path.exists():
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                if line.strip().startswith("GROQ_API_KEY="):
+                    new_lines.append(f"GROQ_API_KEY={key}\n")
+                    key_found = True
+                else:
+                    new_lines.append(line)
+            if not key_found:
+                new_lines.append(f"GROQ_API_KEY={key}\n")
+            lines = new_lines
+        except Exception:
+            lines = [f"GROQ_API_KEY={key}\n"]
+    else:
+        lines = [f"GROQ_API_KEY={key}\n"]
+
+    try:
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        print("API key successfully saved to .env")
+    except Exception as e:
+        print(f"Warning: Could not save key to .env: {e}")
+
+
 def get_api_key(cli_key: Optional[str] = None, interactive: bool = True) -> str:
     """
     Retrieves the Groq API key from CLI argument, environment, .env file,
@@ -68,17 +101,13 @@ def get_api_key(cli_key: Optional[str] = None, interactive: bool = True) -> str:
         print("Error: API key cannot be empty.")
         sys.exit(1)
 
-    # Save to local .env file if requested
-    env_file = Path(".env")
-    if not env_file.exists():
-        try:
-            save_pref = input("Save key to .env file for future use? (y/n): ").strip().lower()
-            if save_pref in ('y', 'yes'):
-                with open(env_file, "w", encoding="utf-8") as f:
-                    f.write(f"GROQ_API_KEY={key}\n")
-                print("Key saved to .env")
-        except Exception:
-            pass
+    # Save to local .env file so the user doesn't have to re-enter it
+    try:
+        save_pref = input("Save key to .env file for future use? (Y/n): ").strip().lower()
+        if save_pref not in ('n', 'no'):
+            save_key_to_env(key)
+    except Exception:
+        pass
 
     os.environ["GROQ_API_KEY"] = key
     return key
