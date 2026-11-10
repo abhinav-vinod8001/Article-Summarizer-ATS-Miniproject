@@ -69,14 +69,41 @@ python3 summarizer.py -t "Your article text goes here..."
 
 ---
 
+## Web Frontend & Vercel Hosting
+
+The project includes a lightweight static frontend (`public/`) paired with a Vercel Python Serverless Function (`api/summarize.py`) that reuses the core summarization logic in `summarizer.py` while keeping `GROQ_API_KEY` safely on the server.
+
+### Run the Web UI Locally
+```bash
+python3 dev_server.py
+```
+Then open `http://127.0.0.1:3000` in your browser.
+
+### Deploy to Vercel
+1. Push this repository to GitHub (or install Vercel CLI with `npm i -g vercel`).
+2. Import the project in [Vercel](https://vercel.com/new) (Framework Preset: **Other**) or run `vercel` in the project root.
+3. In Vercel **Project Settings → Environment Variables**, add:
+   - `GROQ_API_KEY` = your Groq API key
+4. Deploy. Vercel serves `public/index.html` at `/` and runs `api/summarize.py` at `/api/summarize`.
+
+---
+
 ## File Structure
 
 ```text
-├── summarizer.py       # Main CLI application
+├── api/
+│   └── summarize.py    # Vercel Python serverless endpoint (POST /api/summarize)
+├── public/
+│   ├── index.html      # Web frontend
+│   ├── styles.css      # Responsive light-themed styling
+│   └── app.js          # Client logic (upload, validation, copy/download)
+├── dev_server.py       # Local dev server for previewing the web UI
+├── summarizer.py       # Core summarization logic + CLI application
 ├── requirements.txt    # Dependencies (groq, python-dotenv)
 ├── sample_article.txt  # Sample article for testing
 ├── .env.example        # Environment variable template
 ├── .gitignore          # Excludes .env, cache, and summary outputs
+├── .vercelignore       # Excludes local-only files from Vercel deployments
 ├── LICENSE             # MIT License
 └── README.md           # Documentation
 ```

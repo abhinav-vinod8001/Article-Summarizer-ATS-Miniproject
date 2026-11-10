@@ -240,7 +240,7 @@ def summarize(client: Groq, text: str, model: str = MODEL_NAME) -> str:
             return summarize(client, text, model=FALLBACK_MODEL)
         raise RuntimeError("Selected model is not available on Groq.")
     except AuthenticationError:
-        raise RuntimeError("Invalid Groq API key. Check your key in .env")
+        raise RuntimeError("Invalid Groq API key. Check GROQ_API_KEY in .env or environment variables.")
     except RateLimitError:
         raise RuntimeError("Groq API rate limit reached. Please wait a moment and try again.")
     except APIConnectionError:
@@ -251,10 +251,16 @@ def summarize(client: Groq, text: str, model: str = MODEL_NAME) -> str:
         raise RuntimeError(f"Error during summarization: {str(e)}")
 
 
-def display_summary(summary: str, original_words: int):
-    """Prints the structured summary and clear word reduction statistics."""
+def compute_stats(summary: str, original_words: int) -> Tuple[int, float]:
+    """Calculates summary word count and percentage length reduction."""
     summary_words = len(summary.split())
     reduction = max(0.0, round((1.0 - (summary_words / max(original_words, 1))) * 100, 1))
+    return summary_words, reduction
+
+
+def display_summary(summary: str, original_words: int):
+    """Prints the structured summary and clear word reduction statistics."""
+    summary_words, reduction = compute_stats(summary, original_words)
 
     print("\n" + "=" * 62)
     print("                      ARTICLE SUMMARY")
@@ -270,8 +276,7 @@ def save_to_file(summary: str, original_words: int, output_path: str):
     try:
         path = Path(output_path).expanduser().resolve()
         path.parent.mkdir(parents=True, exist_ok=True)
-        summary_words = len(summary.split())
-        reduction = max(0.0, round((1.0 - (summary_words / max(original_words, 1))) * 100, 1))
+        summary_words, reduction = compute_stats(summary, original_words)
 
         output_content = (
             f"ARTICLE SUMMARY\n"

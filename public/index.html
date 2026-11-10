@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Article Summarizer | Executive Digest</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link visually-hidden">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <p class="eyebrow">Groq AI Powered</p>
+      <h1 id="page-title">Article Summarizer</h1>
+      <p class="subtitle">Generate concise, high-impact executive summaries with a 45%–60% target length reduction.</p>
+    </div>
+  </header>
+
+  <main id="main-content" class="container" tabindex="-1">
+    <section class="card input-card" aria-labelledby="input-heading">
+      <div class="card-header">
+        <h2 id="input-heading">Source Article</h2>
+        <div class="toolbar" role="group" aria-label="Article input helpers">
+          <div class="file-upload">
+            <input type="file" id="file-input" class="visually-hidden" accept=".txt,.md,text/plain,text/markdown">
+            <label for="file-input" class="btn btn-secondary">Upload .txt / .md</label>
+          </div>
+          <button type="button" id="sample-btn" class="btn btn-secondary">Try sample</button>
+          <button type="button" id="clear-btn" class="btn btn-secondary">Clear</button>
+        </div>
+      </div>
+
+      <form id="summarizer-form" action="/api/summarize" method="POST" novalidate>
+        <div class="field">
+          <label for="article-input">Article text <span aria-hidden="true">*</span></label>
+          <p id="article-hint" class="hint">
+            Paste your article below or upload a plain-text file (up to 15,000 words).
+          </p>
+          <textarea id="article-input" name="text" rows="12" required aria-invalid="false"
+            aria-describedby="article-hint" data-error="article-error"
+            placeholder="Paste an article or essay to distill into key points..."></textarea>
+          <div id="article-error" class="error-msg">
+            <span role="img" aria-label="Error">⚠</span>
+            <span>Enter or upload article text before summarizing (max 15,000 words).</span>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <p id="word-meta" class="word-meta" aria-live="off">0 words</p>
+          <p class="shortcut-hint">Shortcut: <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd></p>
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" id="submit-btn" class="btn btn-primary">Summarize article</button>
+        </div>
+
+        <div id="loading-bar" class="loading-bar" hidden>
+          <progress aria-label="Generating summary"></progress>
+          <span class="loading-text">Generating executive summary…</span>
+        </div>
+
+        <div id="api-error" class="alert-error" role="alert" hidden></div>
+      </form>
+    </section>
+
+    <section id="result-section" class="card result-card" aria-labelledby="result-heading" hidden>
+      <div class="card-header">
+        <h2 id="result-heading" tabindex="-1">Executive Summary</h2>
+        <div class="toolbar" role="group" aria-label="Summary export actions">
+          <span class="copy">
+            <button type="button" id="copy-btn" class="btn btn-secondary copy-button" command="--copy"
+              commandfor="summary-body">
+              <svg class="icon icon-copy" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <svg class="icon icon-check" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Copy summary</span>
+            </button>
+            <span class="tip" role="status"></span>
+          </span>
+          <button type="button" id="download-btn" class="btn btn-secondary">Download .txt</button>
+        </div>
+      </div>
+
+      <dl class="stats-grid" aria-label="Compression statistics">
+        <div class="stat-item">
+          <dt>Original</dt>
+          <dd id="stat-original">0 words</dd>
+        </div>
+        <div class="stat-item">
+          <dt>Summary</dt>
+          <dd id="stat-summary">0 words</dd>
+        </div>
+        <div class="stat-item stat-highlight">
+          <dt>Reduction</dt>
+          <dd id="stat-reduction">0%</dd>
+        </div>
+      </dl>
+
+      <div id="summary-body" class="summary-prose"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+    </div>
+  </footer>
+
+  <div id="live-announcer" class="visually-hidden" aria-live="polite"></div>
+</body>
+
+</html>

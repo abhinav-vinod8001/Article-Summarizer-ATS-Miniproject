@@ -26,3 +26,6 @@ Thumbs.db
 # IDE configuration
 .vscode/
 .idea/
+
+# Vercel local state
+.vercel
