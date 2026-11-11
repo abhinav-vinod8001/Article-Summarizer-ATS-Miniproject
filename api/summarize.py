@@ -14,8 +14,15 @@ if str(ROOT_DIR) not in sys.path:
 from groq import Groq
 from summarizer import compute_stats, summarize
 
+PUBLIC_DIR = ROOT_DIR / "public"
 MAX_BODY_BYTES = 262_144  # 256 KB
 MAX_WORDS = 15_000
+STATIC_FILES = {
+    "/": ("index.html", "text/html; charset=utf-8"),
+    "/index.html": ("index.html", "text/html; charset=utf-8"),
+    "/styles.css": ("styles.css", "text/css; charset=utf-8"),
+    "/app.js": ("app.js", "application/javascript; charset=utf-8"),
+}
 
 
 def process_summarization(payload: Any, api_key: str) -> Tuple[int, Dict[str, Any]]:
@@ -57,6 +64,15 @@ def process_summarization(payload: Any, api_key: str) -> Tuple[int, Dict[str, An
     }
 
 
+def send_bytes_response(req: BaseHTTPRequestHandler, status_code: int, content_type: str, data: bytes) -> None:
+    """Writes a binary/text response with explicit Content-Type and Content-Length."""
+    req.send_response(status_code)
+    req.send_header("Content-Type", content_type)
+    req.send_header("Content-Length", str(len(data)))
+    req.end_headers()
+    req.wfile.write(data)
+
+
 def send_json_response(req: BaseHTTPRequestHandler, status_code: int, body: Dict[str, Any]) -> None:
     """Writes a UTF-8 JSON response with no-store caching headers."""
     encoded = json.dumps(body).encode("utf-8")
@@ -69,12 +85,32 @@ def send_json_response(req: BaseHTTPRequestHandler, status_code: int, body: Dict
 
 
 class handler(BaseHTTPRequestHandler):
-    """Vercel serverless HTTP handler mapped to /api/summarize."""
+    """Vercel Python entrypoint serving static assets and /api/summarize."""
+
+    def _route_path(self) -> str:
+        return self.path.split("?", 1)[0]
 
     def do_GET(self) -> None:
-        send_json_response(self, 200, {"status": "ok", "endpoint": "/api/summarize"})
+        path = self._route_path()
+        if path in ("/api/summarize", "/api/summarize/"):
+            send_json_response(self, 200, {"status": "ok", "endpoint": "/api/summarize"})
+            return
+
+        static_entry = STATIC_FILES.get(path)
+        if static_entry:
+            filename, content_type = static_entry
+            file_path = PUBLIC_DIR / filename
+            if file_path.is_file():
+                send_bytes_response(self, 200, content_type, file_path.read_bytes())
+                return
+
+        send_json_response(self, 404, {"error": "Not found."})
 
     def do_POST(self) -> None:
+        if self._route_path() not in ("/api/summarize", "/api/summarize/"):
+            send_json_response(self, 404, {"error": "Not found."})
+            return
+
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
         except ValueError:

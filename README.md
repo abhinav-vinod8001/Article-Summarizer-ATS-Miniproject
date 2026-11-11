@@ -81,10 +81,10 @@ Then open `http://127.0.0.1:3000` in your browser.
 
 ### Deploy to Vercel
 1. Push this repository to GitHub (or install Vercel CLI with `npm i -g vercel`).
-2. Import the project in [Vercel](https://vercel.com/new) (Framework Preset: **Other**) or run `vercel` in the project root.
+2. Import the project in [Vercel](https://vercel.com/new) (leave the default **Python** preset; [`pyproject.toml`](pyproject.toml) configures `entrypoint = "api.summarize:handler"`).
 3. In Vercel **Project Settings → Environment Variables**, add:
    - `GROQ_API_KEY` = your Groq API key
-4. Deploy. Vercel serves `public/index.html` at `/` and runs `api/summarize.py` at `/api/summarize`.
+4. Deploy. Vercel routes the web UI (`public/`) and `/api/summarize` through [`api/summarize.py`](api/summarize.py).
 
 ---
 
@@ -92,12 +92,13 @@ Then open `http://127.0.0.1:3000` in your browser.
 
 ```text
 ├── api/
-│   └── summarize.py    # Vercel Python serverless endpoint (POST /api/summarize)
+│   └── summarize.py    # Vercel Python entrypoint (web UI + /api/summarize)
 ├── public/
 │   ├── index.html      # Web frontend
 │   ├── styles.css      # Responsive light-themed styling
 │   └── app.js          # Client logic (upload, validation, copy/download)
 ├── dev_server.py       # Local dev server for previewing the web UI
+├── pyproject.toml      # Vercel Python entrypoint & dependencies
 ├── summarizer.py       # Core summarization logic + CLI application
 ├── requirements.txt    # Dependencies (groq, python-dotenv)
 ├── sample_article.txt  # Sample article for testing
