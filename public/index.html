@@ -11,7 +11,7 @@
 </head>
 
 <body>
-  <a href="#main-content" class="skip-link visually-hidden">Skip to main content</a>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <header class="site-header">
     <div class="container">
@@ -26,10 +26,8 @@
       <div class="card-header">
         <h2 id="input-heading">Source Article</h2>
         <div class="toolbar" role="group" aria-label="Article input helpers">
-          <div class="file-upload">
-            <input type="file" id="file-input" class="visually-hidden" accept=".txt,.md,text/plain,text/markdown">
-            <label for="file-input" class="btn btn-secondary">Upload .txt / .md</label>
-          </div>
+          <button type="button" id="upload-btn" class="btn btn-secondary">Upload .txt / .md</button>
+          <input type="file" id="file-input" class="visually-hidden" accept=".txt,.md,text/plain,text/markdown" tabindex="-1">
           <button type="button" id="sample-btn" class="btn btn-secondary">Try sample</button>
           <button type="button" id="clear-btn" class="btn btn-secondary">Clear</button>
         </div>

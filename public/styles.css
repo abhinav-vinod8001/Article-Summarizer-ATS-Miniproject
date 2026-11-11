@@ -80,7 +80,8 @@
 }
 
 @layer components {
-  .visually-hidden:where(:not(:focus-within, :active)) {
+  .visually-hidden,
+  .skip-link:where(:not(:focus-within, :active)) {
     position: absolute !important;
     clip-path: inset(50%) !important;
     overflow: hidden !important;
@@ -173,16 +174,6 @@
     gap: 0.5rem;
   }
 
-  .file-upload {
-    position: relative;
-    display: inline-flex;
-  }
-
-  .file-upload input:focus-visible + label {
-    outline: 3px solid var(--color-focus);
-    outline-offset: 2px;
-  }
-
   .btn {
     display: inline-flex;
     align-items: center;
@@ -198,6 +189,7 @@
     line-height: 1.2;
     cursor: pointer;
     text-decoration: none;
+    user-select: none;
     transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
   }
 

@@ -13,6 +13,7 @@ Furthermore, optimizations at the model level—such as speculative decoding, ac
 
 const form = document.getElementById('summarizer-form');
 const textarea = document.getElementById('article-input');
+const uploadBtn = document.getElementById('upload-btn');
 const fileInput = document.getElementById('file-input');
 const sampleBtn = document.getElementById('sample-btn');
 const clearBtn = document.getElementById('clear-btn');
@@ -310,6 +311,16 @@ textarea.addEventListener('keydown', (e) => {
     e.preventDefault();
     form.requestSubmit();
   }
+});
+
+uploadBtn.addEventListener('click', () => {
+  clearApiError();
+  fileInput.value = '';
+  fileInput.click();
+});
+
+fileInput.addEventListener('cancel', () => {
+  uploadBtn.focus();
 });
 
 fileInput.addEventListener('change', async () => {
